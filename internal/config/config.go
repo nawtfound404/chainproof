@@ -8,6 +8,8 @@ type Config struct {
 	PrivateKey        string
 	IPFSEndpoint      string
 	EncryptionEnabled bool
+	ContractAddress   string
+	ChainID           int64
 }
 
 func Load() *Config {
@@ -17,6 +19,8 @@ func Load() *Config {
 		PrivateKey:        os.Getenv("PRIVATE_KEY"),
 		IPFSEndpoint:      os.Getenv("IPFS_ENDPOINT"),
 		EncryptionEnabled: getEnv("ENCRYPTED_ENABLED", "false") == "true",
+		ContractAddress:   getEnv("CONTRACT_ADDRESS", ""),
+		ChainID:           11155111,
 	}
 }
 

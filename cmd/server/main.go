@@ -8,14 +8,29 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/nawtfound404/chainproof/internals/api"
-	"github.com/nawtfound404/chainproof/internals/config"
-	"github.com/nawtfound404/chainproof/internals/logger"
+	"github.com/nawtfound404/chainproof/internal/anchor"
+	"github.com/nawtfound404/chainproof/internal/api"
+	"github.com/nawtfound404/chainproof/internal/config"
+	"github.com/nawtfound404/chainproof/internal/logger"
 )
 
 func main() {
 	cfg := config.Load()
 	log := logger.New()
+
+	// Initialize Ethereum client ONCE
+	ethClient, err := anchor.NewEthereumClient(
+		cfg.EthereumRPC,
+		cfg.ContractAddress,
+		cfg.PrivateKey,
+		cfg.ChainID,
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// Inject ethClient later into proof service (Phase 5)
+	_ = ethClient
 
 	mux := http.NewServeMux()
 	api.RegisterRoutes(mux)
@@ -27,11 +42,9 @@ func main() {
 
 	go func() {
 		log.Println("Server starting on port", cfg.Port)
-		if err := server.ListenAndServe(); err != http.ErrServerClosed {
+		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatal("server failed:", err)
-
 		}
-
 	}()
 
 	stop := make(chan os.Signal, 1)
@@ -47,5 +60,8 @@ func main() {
 		log.Println("Server shutdown failed:", err)
 	}
 
-	log.Println("server exited properly")
+	log.Println("Server exited properly")
+	log.Println("RPC:", cfg.EthereumRPC)
+	log.Println("Contract:", cfg.ContractAddress)
+	log.Println("ChainID:", cfg.ChainID)
 }
