@@ -17,7 +17,7 @@ func Load() *Config {
 		Port:              getEnv("PORT", "8080"),
 		EthereumRPC:       os.Getenv("ETH_RPC_URL"),
 		PrivateKey:        os.Getenv("PRIVATE_KEY"),
-		IPFSEndpoint:      os.Getenv("IPFS_ENDPOINT"),
+		IPFSEndpoint:      getEnv("IPFS_ENDPOINT", "http://localhost:5001"),
 		EncryptionEnabled: getEnv("ENCRYPTED_ENABLED", "false") == "true",
 		ContractAddress:   getEnv("CONTRACT_ADDRESS", ""),
 		ChainID:           11155111,

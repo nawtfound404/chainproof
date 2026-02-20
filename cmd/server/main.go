@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/hex"
 	"net/http"
 	"os"
 	"os/signal"
@@ -20,7 +21,7 @@ func main() {
 	cfg := config.Load()
 	log := logger.New()
 
-	// Initialize Ethereum client ONCE
+	// Ethereum client
 	ethClient, err := anchor.NewEthereumClient(
 		cfg.EthereumRPC,
 		cfg.ContractAddress,
@@ -31,17 +32,39 @@ func main() {
 		log.Fatal(err)
 	}
 
-	// Inject ethClient later into proof service (Phase 5)
-	_ = ethClient
+	// IPFS client
+	ipfsClient := ipfs.New(cfg.IPFSEndpoint)
 
+	// Decode encryption key correctly
+	encryptionKey, err := hex.DecodeString(
+		"4a3f9c1d8e2b7a6f5c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a",
+	)
+	if err != nil {
+		log.Fatal("invalid encryption key")
+	}
+
+	// Proof service
+	proofService := proof.NewService(
+		ethClient,
+		ipfsClient,
+		cfg.EncryptionEnabled,
+		encryptionKey,
+	)
+
+	// HTTP handler
+	handler := api.NewHandler(proofService)
+
+	// Router
 	mux := http.NewServeMux()
-	api.RegisterRoutes(mux)
+	api.RegisterRoutes(mux, handler)
 
+	// Server
 	server := &http.Server{
 		Addr:    ":" + cfg.Port,
 		Handler: mux,
 	}
 
+	// Start server
 	go func() {
 		log.Println("Server starting on port", cfg.Port)
 		if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
@@ -49,6 +72,7 @@ func main() {
 		}
 	}()
 
+	// Graceful shutdown
 	stop := make(chan os.Signal, 1)
 	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
 	<-stop
@@ -63,19 +87,4 @@ func main() {
 	}
 
 	log.Println("Server exited properly")
-	log.Println("RPC:", cfg.EthereumRPC)
-	log.Println("Contract:", cfg.ContractAddress)
-	log.Println("ChainID:", cfg.ChainID)
-
-
-	ipfsClient := ipfs.New(cfg.IPFSEndpoint)
-
-	proofService := proof.NewService(
-		ethClient,
-		ipfsClient,
-		cfg.EncryptionEnabled,
-		[]byte("0x4a3f9c1d8e2b7a6f5c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a"),
-	)
-
-	_= proofService
 }
