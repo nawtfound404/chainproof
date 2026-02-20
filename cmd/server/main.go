@@ -11,7 +11,9 @@ import (
 	"github.com/nawtfound404/chainproof/internal/anchor"
 	"github.com/nawtfound404/chainproof/internal/api"
 	"github.com/nawtfound404/chainproof/internal/config"
+	"github.com/nawtfound404/chainproof/internal/ipfs"
 	"github.com/nawtfound404/chainproof/internal/logger"
+	"github.com/nawtfound404/chainproof/internal/proof"
 )
 
 func main() {
@@ -64,4 +66,16 @@ func main() {
 	log.Println("RPC:", cfg.EthereumRPC)
 	log.Println("Contract:", cfg.ContractAddress)
 	log.Println("ChainID:", cfg.ChainID)
+
+
+	ipfsClient := ipfs.New(cfg.IPFSEndpoint)
+
+	proofService := proof.NewService(
+		ethClient,
+		ipfsClient,
+		cfg.EncryptionEnabled,
+		[]byte("0x4a3f9c1d8e2b7a6f5c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a"),
+	)
+
+	_= proofService
 }
