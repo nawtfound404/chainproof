@@ -87,4 +87,5 @@ func main() {
 	}
 
 	log.Println("Server exited properly")
+	proofService.Shutdown()
 }

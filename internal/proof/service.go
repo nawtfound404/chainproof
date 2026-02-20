@@ -1,9 +1,11 @@
 package proof
 
 import (
+	"bytes"
 	"context"
 	"encoding/hex"
 	"errors"
+	"sort"
 	"time"
 
 	"github.com/nawtfound404/chainproof/internal/anchor"
@@ -24,6 +26,7 @@ type Service struct {
 	batchQueue  chan batchItem
 	batchSize   int
 	batchWindow time.Duration
+	shutdown    chan struct{}
 }
 
 type batchItem struct {
@@ -32,10 +35,15 @@ type batchItem struct {
 }
 
 type anchorResult struct {
-	txHash string
+	TxHash string
 	Root   string
 	Proof  []MerkleProofItem
 	Err    error
+}
+
+type sortableLeaf struct {
+	HashBytes []byte
+	Item      batchItem
 }
 
 func NewService(
@@ -57,6 +65,7 @@ func NewService(
 		batchQueue:  make(chan batchItem, 1000),
 		batchSize:   1,
 		batchWindow: 2 * time.Second,
+		shutdown:    make(chan struct{}),
 	}
 
 	go s.batchWorker()
@@ -70,6 +79,7 @@ func NewService(
 //
 
 func (s *Service) batchWorker() {
+
 	ticker := time.NewTicker(s.batchWindow)
 	defer ticker.Stop()
 
@@ -91,6 +101,12 @@ func (s *Service) batchWorker() {
 				s.processBatch(pending)
 				pending = nil
 			}
+
+		case <-s.shutdown:
+			if len(pending) > 0 {
+				s.processBatch(pending)
+			}
+			return
 		}
 	}
 }
@@ -103,55 +119,55 @@ func (s *Service) batchWorker() {
 
 func (s *Service) processBatch(items []batchItem) {
 
-	var leaves [][]byte
+	var leaves []sortableLeaf
 
 	for _, item := range items {
-		hashBytes, err := hex.DecodeString(item.Hash)
-		if err != nil {
-			s.failBatch(items, err)
-			return
-		}
-		leaves = append(leaves, hashBytes)
+		bytesHash, _ := hex.DecodeString(item.Hash)
+		leaves = append(leaves, sortableLeaf{
+			HashBytes: bytesHash,
+			Item:      item,
+		})
 	}
 
-	// Build Merkle tree
-	tree := merkle.NewTree(leaves)
+	// 🔥 Deterministic sorting
+	sort.Slice(leaves, func(i, j int) bool {
+		return bytes.Compare(leaves[i].HashBytes, leaves[j].HashBytes) < 0
+	})
+
+	// Extract sorted hashes
+	var sortedHashes [][]byte
+	for _, leaf := range leaves {
+		sortedHashes = append(sortedHashes, leaf.HashBytes)
+	}
+
+	tree := merkle.NewTree(sortedHashes)
 	root := tree.Root()
 	rootHex := hex.EncodeToString(root)
 
-	// Anchor root on-chain
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	txHash, err := s.ethClient.StoreProof(ctx, rootHex)
 
-	// Send results to each item
-	for i, item := range items {
+	// 🔥 Generate proofs using sorted order
+	for i, leaf := range leaves {
 
-		// Generate Merkle inclusion proof for leaf i
 		proofNodes := tree.GenerateProof(i)
 
 		var serializedProof []MerkleProofItem
 
 		for _, node := range proofNodes {
 			serializedProof = append(serializedProof, MerkleProofItem{
-				Hash: hex.EncodeToString(node.Hash),
-				Position: map[bool]string{
-					true:  "left",
-					false: "right",
-				}[node.IsLeft],
+				Hash:     hex.EncodeToString(node.Hash),
+				Position: map[bool]string{true: "left", false: "right"}[node.IsLeft],
 			})
 		}
 
-		select {
-		case item.Result <- anchorResult{
-			txHash: txHash,
+		leaf.Item.Result <- anchorResult{
+			TxHash: txHash,
 			Root:   rootHex,
 			Proof:  serializedProof,
 			Err:    err,
-		}:
-		default:
-			// caller is gone, avoid blocking worker
 		}
 	}
 }
@@ -212,16 +228,17 @@ func (s *Service) CreateProof(input []byte) (*Proof, error) {
 		return nil, errors.New("batch queue full")
 	}
 
-	// NOTE: still blocking (Phase-5.5 will async this)
+	// 6. Wait for batch result (still sync for now)
 	result := <-resultChan
 	if result.Err != nil {
 		return nil, result.Err
 	}
 
+	// 7. Return proof metadata
 	return &Proof{
 		Hash:            hash,
 		CID:             cid,
-		TxHash:          result.txHash,
+		TxHash:          result.TxHash,
 		Root:            result.Root,
 		MerkleProofItem: result.Proof,
 		Timestamp:       time.Now(),
@@ -234,4 +251,8 @@ func (s *Service) VerifyOnChain(hash string) (bool, error) {
 	defer cancel()
 
 	return s.ethClient.ProofExists(ctx, hash)
+}
+
+func (s *Service) Shutdown() {
+	close(s.shutdown)
 }
