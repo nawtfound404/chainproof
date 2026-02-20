@@ -33,6 +33,8 @@ type batchItem struct {
 
 type anchorResult struct {
 	txHash string
+	Root   string
+	Proof  []MerkleProofItem
 	Err    error
 }
 
@@ -53,8 +55,8 @@ func NewService(
 		encrypt:     encrypt,
 		key:         key,
 		batchQueue:  make(chan batchItem, 1000),
-		batchSize:   50,
-		batchWindow: 5 * time.Second,
+		batchSize:   1,
+		batchWindow: 2 * time.Second,
 	}
 
 	go s.batchWorker()
@@ -112,23 +114,44 @@ func (s *Service) processBatch(items []batchItem) {
 		leaves = append(leaves, hashBytes)
 	}
 
+	// Build Merkle tree
 	tree := merkle.NewTree(leaves)
 	root := tree.Root()
 	rootHex := hex.EncodeToString(root)
 
+	// Anchor root on-chain
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 
 	txHash, err := s.ethClient.StoreProof(ctx, rootHex)
 
-	for _, item := range items {
+	// Send results to each item
+	for i, item := range items {
+
+		// Generate Merkle inclusion proof for leaf i
+		proofNodes := tree.GenerateProof(i)
+
+		var serializedProof []MerkleProofItem
+
+		for _, node := range proofNodes {
+			serializedProof = append(serializedProof, MerkleProofItem{
+				Hash: hex.EncodeToString(node.Hash),
+				Position: map[bool]string{
+					true:  "left",
+					false: "right",
+				}[node.IsLeft],
+			})
+		}
+
 		select {
 		case item.Result <- anchorResult{
 			txHash: txHash,
+			Root:   rootHex,
+			Proof:  serializedProof,
 			Err:    err,
 		}:
 		default:
-			// caller is gone
+			// caller is gone, avoid blocking worker
 		}
 	}
 }
@@ -196,11 +219,13 @@ func (s *Service) CreateProof(input []byte) (*Proof, error) {
 	}
 
 	return &Proof{
-		Hash:      hash,
-		CID:       cid,
-		TxHash:    result.txHash,
-		Timestamp: time.Now(),
-		Encrypted: s.encrypt,
+		Hash:            hash,
+		CID:             cid,
+		TxHash:          result.txHash,
+		Root:            result.Root,
+		MerkleProofItem: result.Proof,
+		Timestamp:       time.Now(),
+		Encrypted:       s.encrypt,
 	}, nil
 }
 
