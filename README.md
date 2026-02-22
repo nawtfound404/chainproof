@@ -240,11 +240,3 @@ Limitations (v1)
 ChainProof v1.0 — Deterministic, batched, verifiable Web3 proof infrastructure.
 
 ---
-
-If you'd like, I can also:
-
-- Add a Postman collection / OpenAPI spec for the API.
-- Add a simple CLI tool to submit proofs from the terminal.
-- Add automated tests for the encryption path and Merkle batching.
-
-Tell me which of the above you'd like next.
