@@ -35,12 +35,20 @@ func main() {
 	// IPFS client
 	ipfsClient := ipfs.New(cfg.IPFSEndpoint)
 
-	// Decode encryption key correctly
-	encryptionKey, err := hex.DecodeString(
-		"4a3f9c1d8e2b7a6f5c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a",
-	)
-	if err != nil {
-		log.Fatal("invalid encryption key")
+	// Decode encryption key (32 bytes) only when enabled
+	var encryptionKey []byte
+	if cfg.EncryptionEnabled {
+		keyHex := os.Getenv("ENCRYPTION_KEY")
+		if keyHex == "" {
+			log.Fatal("ENCRYPTION_KEY not set but encryption is enabled")
+		}
+		encryptionKey, err = hex.DecodeString(keyHex)
+		if err != nil {
+			log.Fatal("invalid ENCRYPTION_KEY")
+		}
+		if len(encryptionKey) != 32 {
+			log.Fatal("ENCRYPTION_KEY must decode to 32 bytes")
+		}
 	}
 
 	// Proof service
@@ -51,17 +59,20 @@ func main() {
 		encryptionKey,
 	)
 
-	// HTTP handler
-	handler := api.NewHandler(proofService)
+	// Business API handler
+	apiHandler := api.NewHandler(proofService)
 
 	// Router
 	mux := http.NewServeMux()
-	api.RegisterRoutes(mux, handler)
+	api.RegisterRoutes(mux, apiHandler)
 
-	// Server
+	// ✅ Apply CORS middleware
+	httpHandler := api.CORSMiddleware(mux)
+
+	// HTTP server
 	server := &http.Server{
 		Addr:    ":" + cfg.Port,
-		Handler: mux,
+		Handler: httpHandler, // ❗ not mux
 	}
 
 	// Start server
@@ -86,6 +97,10 @@ func main() {
 		log.Println("Server shutdown failed:", err)
 	}
 
+	// Optional cleanup
+	if closer, ok := interface{}(proofService).(interface{ Shutdown() }); ok {
+		closer.Shutdown()
+	}
+
 	log.Println("Server exited properly")
-	proofService.Shutdown()
 }

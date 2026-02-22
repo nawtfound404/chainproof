@@ -1,0 +1,368 @@
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 4rem 2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 4rem;
+}
+
+/* Glassmorphism Card System */
+.card {
+    background: var(--surface-color);
+    border: 1px solid var(--surface-border);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border-radius: 16px;
+    /* xl radius */
+    padding: 2rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.cardHeader {
+    margin-bottom: 1.5rem;
+}
+
+.cardTitle {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cardDescription {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+/* Hero Section */
+.hero {
+    text-align: center;
+    position: relative;
+    padding: 4rem 0;
+    z-index: 1;
+}
+
+.heroTitle {
+    font-size: 4rem;
+    font-weight: 700;
+    letter-spacing: -0.04em;
+    margin-bottom: 1rem;
+    background: linear-gradient(to right, #ffffff, #a1a1aa);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.heroSubtitle {
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: var(--accent-cyan);
+    margin-bottom: 1.5rem;
+    text-shadow: var(--accent-glow);
+}
+
+.heroDescription {
+    font-size: 1.125rem;
+    color: var(--text-secondary);
+    max-width: 600px;
+    margin: 0 auto;
+    line-height: 1.6;
+}
+
+/* Base Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0.75rem 1.5rem;
+    border-radius: 8px;
+    font-weight: 500;
+    font-size: 0.9375rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: none;
+    outline: none;
+}
+
+.btnPrimary {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.btnPrimary:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: var(--accent-cyan);
+    box-shadow: var(--accent-glow);
+}
+
+.btnPrimary:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btnSuccess {
+    background: rgba(16, 185, 129, 0.1);
+    color: var(--accent-emerald);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.btnSuccess:hover:not(:disabled) {
+    background: rgba(16, 185, 129, 0.2);
+    border-color: var(--accent-emerald);
+    box-shadow: var(--success-glow);
+}
+
+/* Input Area */
+.textarea {
+    width: 100%;
+    min-height: 200px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--surface-border);
+    border-radius: 8px;
+    padding: 1rem;
+    color: var(--text-primary);
+    font-family: var(--font-mono);
+    font-size: 0.875rem;
+    resize: vertical;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.textarea:focus {
+    outline: none;
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 0 1px var(--accent-cyan);
+}
+
+/* Pipeline Visualization */
+.pipeline {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    margin-top: 1rem;
+}
+
+.pipelineStep {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    position: relative;
+    opacity: 0.5;
+    transition: opacity 0.3s ease;
+}
+
+.pipelineStep.active {
+    opacity: 1;
+}
+
+.pipelineStep.completed {
+    opacity: 1;
+}
+
+.stepIcon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--surface-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-secondary);
+    position: relative;
+    z-index: 2;
+    transition: all 0.3s ease;
+}
+
+.pipelineStep.active .stepIcon {
+    border-color: var(--accent-cyan);
+    color: var(--accent-cyan);
+    box-shadow: var(--accent-glow);
+    background: rgba(0, 242, 254, 0.1);
+}
+
+.pipelineStep.completed .stepIcon {
+    border-color: var(--accent-emerald);
+    color: var(--accent-emerald);
+    box-shadow: var(--success-glow);
+    background: rgba(16, 185, 129, 0.1);
+}
+
+.stepLine {
+    position: absolute;
+    left: 24px;
+    top: 48px;
+    bottom: -1.5rem;
+    width: 2px;
+    background: var(--surface-border);
+    z-index: 1;
+}
+
+.pipelineStep:last-child .stepLine {
+    display: none;
+}
+
+.pipelineStep.completed .stepLine {
+    background: var(--accent-emerald);
+    box-shadow: var(--success-glow);
+}
+
+.stepContent {
+    flex: 1;
+}
+
+.stepTitle {
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.stepDescription {
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-left-color: var(--accent-cyan);
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Tooltip System */
+.tooltipContainer {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltipTarget {
+    text-decoration: underline dashed rgba(255, 255, 255, 0.4);
+    text-underline-offset: 4px;
+    cursor: help;
+}
+
+.tooltip {
+    position: absolute;
+    bottom: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%);
+    width: 250px;
+    background: var(--surface-color);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid var(--accent-cyan);
+    color: var(--text-primary);
+    padding: 1rem;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    line-height: 1.5;
+    z-index: 100;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5), var(--accent-glow);
+    text-align: center;
+    pointer-events: none;
+    animation: fadeIn 0.15s ease-out;
+}
+
+.tooltip::after {
+    content: '';
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    margin-left: -6px;
+    border-width: 6px;
+    border-style: solid;
+    border-color: var(--accent-cyan) transparent transparent transparent;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, 5px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0);
+    }
+}
+
+/* Merkle Tree Visualizer */
+.merkleContainer {
+    display: flex;
+    flex-direction: column-reverse;
+    /* Root at top visually in layout terms, or handled by DOM order. Let's do standard top-down: Root top, leaves bottom */
+    align-items: center;
+    gap: 2rem;
+    padding: 2rem;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 8px;
+    border: 1px solid var(--surface-border);
+    overflow-x: auto;
+}
+
+/* But actually, for standard rendering, row 0 is leaves, row N is root. 
+   flex-direction: column-reverse puts row N at the top. */
+
+.merkleLevel {
+    display: flex;
+    justify-content: center;
+    gap: 2rem;
+    position: relative;
+}
+
+.merkleNode {
+    background: var(--surface-color);
+    border: 1px solid var(--surface-border);
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    position: relative;
+    transition: all 0.3s ease;
+    z-index: 2;
+}
+
+.merkleNode.isProofPath {
+    border-color: var(--accent-cyan);
+    color: var(--text-primary);
+    box-shadow: var(--accent-glow);
+}
+
+.merkleNode.isTarget {
+    border-color: var(--accent-emerald);
+    color: #fff;
+    background: rgba(16, 185, 129, 0.2);
+    box-shadow: var(--success-glow);
+}
+
+.merkleLine {
+    position: absolute;
+    background: var(--surface-border);
+    z-index: 1;
+}

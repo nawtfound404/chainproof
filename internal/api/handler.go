@@ -2,7 +2,9 @@ package api
 
 import (
 	"encoding/json"
+	"log"
 	"net/http"
+	"strings"
 
 	"github.com/nawtfound404/chainproof/internal/proof"
 )
@@ -12,7 +14,7 @@ type Handler struct {
 }
 
 func HealthHandler(w http.ResponseWriter, r *http.Request) {
-	resp := map[string]string {
+	resp := map[string]string{
 		"status": "ok",
 	}
 	w.Header().Set("Content-Type", "application/json")
@@ -25,20 +27,20 @@ func NewHandler(proofService *proof.Service) *Handler {
 	}
 }
 
-
 func (h *Handler) CreateProof(w http.ResponseWriter, r *http.Request) {
-	var body struct{
+	var body struct {
 		Data json.RawMessage `json:"data"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
 		http.Error(w, "Invalid JSON", http.StatusBadRequest)
-		return 
+		return
 	}
 
 	proofObj, err := h.proofService.CreateProof(body.Data)
 	if err != nil {
-		http.Error(w, err. Error(), http.StatusInternalServerError)
+		log.Println("CreateProof error: ", err)
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
 
@@ -48,23 +50,25 @@ func (h *Handler) CreateProof(w http.ResponseWriter, r *http.Request) {
 
 func (h *Handler) VerifyProof(w http.ResponseWriter, r *http.Request) {
 	hash := r.URL.Query().Get("hash")
-	if hash == "" {
-		http.Error(w, "missing hash", http.StatusBadRequest)
-		return
-	}
+	hash = strings.TrimPrefix(hash, "0x")
+
+	log.Println("Verify request for hash:", hash)
 
 	exists, err := h.proofService.VerifyOnChain(hash)
 	if err != nil {
+		log.Println("Verify error:", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return 
+		return
 	}
 
-	resp := map[string]interface{}{
-		"hash": hash,
-		"on_chain": exists,
+	log.Println("Verify result:", exists)
 
+	resp := map[string]interface{}{
+		"hash":     hash,
+		"on_chain": exists,
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
+	
 }

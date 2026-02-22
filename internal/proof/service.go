@@ -18,10 +18,10 @@ import (
 )
 
 type Service struct {
-	ethClient  *anchor.EthereumClient
-	ipfsClient *ipfs.Client
-	encrypt    bool
-	key        []byte
+	ethClient         *anchor.EthereumClient
+	ipfsClient        *ipfs.Client
+	encryptionEnabled bool
+	encryptionKey     []byte
 
 	batchQueue  chan batchItem
 	batchSize   int
@@ -49,23 +49,23 @@ type sortableLeaf struct {
 func NewService(
 	eth *anchor.EthereumClient,
 	ipfsClient *ipfs.Client,
-	encrypt bool,
-	key []byte,
+	encryptionEnabled bool,
+	encryptionKey []byte,
 ) *Service {
 
-	if encrypt && len(key) != 32 {
+	if encryptionEnabled && len(encryptionKey) != 32 {
 		panic("encryption enabled but key is not 32 bytes")
 	}
 
 	s := &Service{
-		ethClient:   eth,
-		ipfsClient:  ipfsClient,
-		encrypt:     encrypt,
-		key:         key,
-		batchQueue:  make(chan batchItem, 1000),
-		batchSize:   1,
-		batchWindow: 2 * time.Second,
-		shutdown:    make(chan struct{}),
+		ethClient:         eth,
+		ipfsClient:        ipfsClient,
+		encryptionEnabled: encryptionEnabled,
+		encryptionKey:     encryptionKey,
+		batchQueue:        make(chan batchItem, 1000),
+		batchSize:         1,
+		batchWindow:       2 * time.Second,
+		shutdown:          make(chan struct{}),
 	}
 
 	go s.batchWorker()
@@ -198,20 +198,23 @@ func (s *Service) CreateProof(input []byte) (*Proof, error) {
 	}
 
 	// 2. Hash (leaf)
-	hash := hashing.HashSHA256(canonicalBytes)
+	hash := hashing.HashSHA256(canonicalBytes) // returns hex string
 
-	dataToStore := canonicalBytes
+	var uploadData []byte
 
 	// 3. Encrypt (optional)
-	if s.encrypt {
-		dataToStore, err = encryption.Encrypt(canonicalBytes, s.key)
+	if s.encryptionEnabled {
+		encryptedData, err := encryption.Encrypt(canonicalBytes, s.encryptionKey)
 		if err != nil {
 			return nil, err
 		}
+		uploadData = encryptedData
+	} else {
+		uploadData = canonicalBytes
 	}
 
 	// 4. Upload to IPFS
-	cid, err := s.ipfsClient.Upload(dataToStore)
+	cid, err := s.ipfsClient.Upload(uploadData)
 	if err != nil {
 		return nil, err
 	}
@@ -242,7 +245,7 @@ func (s *Service) CreateProof(input []byte) (*Proof, error) {
 		Root:            result.Root,
 		MerkleProofItem: result.Proof,
 		Timestamp:       time.Now(),
-		Encrypted:       s.encrypt,
+		Encrypted:       s.encryptionEnabled,
 	}, nil
 }
 
