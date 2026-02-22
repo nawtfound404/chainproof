@@ -117,6 +117,31 @@ openssl rand -hex 32
 
 Make sure the hex string is on a single line (no line breaks) in `.env`.
 
+### API Key (recommended for public deployments)
+
+For demo/public deployments you should protect the `POST /proof` endpoint with a simple API key. Add this to your `.env` (Railway or other host will set it as a secret):
+
+```dotenv
+API_KEY=some_random_string_for_server
+NEXT_PUBLIC_API_KEY=some_random_string_for_client
+```
+
+- `API_KEY` is read by the backend and must match the `X-API-Key` header in requests.
+- `NEXT_PUBLIC_API_KEY` is exposed to the frontend (only for demo use) and used when the UI calls `/proof`.
+
+When deploying:
+
+- In Railway (or your host) add `API_KEY` as a project variable (private).
+- In Vercel add `NEXT_PUBLIC_API_KEY` and `NEXT_PUBLIC_BACKEND_URL` to the project Environment Variables.
+
+Set `NEXT_PUBLIC_BACKEND_URL` to your Railway app domain, e.g.:
+
+```dotenv
+NEXT_PUBLIC_BACKEND_URL=https://chainproof-production.up.railway.app
+```
+
+This keeps the backend protected from anonymous POSTs while allowing the public UI to call it.
+
 3. Start IPFS (if required)
 
 ```bash

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"log"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/nawtfound404/chainproof/internal/proof"
@@ -28,6 +29,12 @@ func NewHandler(proofService *proof.Service) *Handler {
 }
 
 func (h *Handler) CreateProof(w http.ResponseWriter, r *http.Request) {
+
+	apikey := r.Header.Get("X-API-Key")
+	if apikey != os.Getenv("API_KEY"){
+		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		return	
+	}
 	var body struct {
 		Data json.RawMessage `json:"data"`
 	}

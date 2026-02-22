@@ -218,7 +218,10 @@ export default function Home() {
       // Actually fetch the data (in background during simulation or after)
       const res = await fetch(`${BACKEND_URL}/proof`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+          "X-API-Key": process.env.NEXT_PUBLIC_API_KEY || "",
+        },
         body: JSON.stringify({ data: parsed }),
       })
 
