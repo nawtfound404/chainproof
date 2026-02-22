@@ -5,8 +5,7 @@
 kubo/
 kubo_v0.27.0_linux-amd64.tar.gz
 
-# Go
-go.sum
+
 
 # Solidity / Foundry artifacts
 out/
