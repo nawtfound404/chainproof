@@ -60,7 +60,8 @@ func main() {
 	)
 
 	// Business API handler
-	apiHandler := api.NewHandler(proofService)
+	convfg := config.Load()
+	apiHandler := api.NewHandler(proofService, convfg.APIKey)
 
 	// Router
 	mux := http.NewServeMux()

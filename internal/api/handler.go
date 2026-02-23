@@ -12,6 +12,7 @@ import (
 
 type Handler struct {
 	proofService *proof.Service
+	apiKey       string
 }
 
 func HealthHandler(w http.ResponseWriter, r *http.Request) {
@@ -22,18 +23,24 @@ func HealthHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(resp)
 }
 
-func NewHandler(proofService *proof.Service) *Handler {
+func NewHandler(proofService *proof.Service, apiKey string) *Handler {
 	return &Handler{
 		proofService: proofService,
+		apiKey:       apiKey,
 	}
 }
 
 func (h *Handler) CreateProof(w http.ResponseWriter, r *http.Request) {
 
+	expected := os.Getenv("API_KEY")
+	if expected == "" {
+		log.Fatal("API_KEY not configured")
+	}
+
 	apikey := r.Header.Get("X-API-Key")
-	if apikey != os.Getenv("API_KEY"){
+	if apikey != h.apiKey {
 		http.Error(w, "Unauthorized", http.StatusUnauthorized)
-		return	
+		return
 	}
 	var body struct {
 		Data json.RawMessage `json:"data"`
@@ -77,5 +84,5 @@ func (h *Handler) VerifyProof(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(resp)
-	
+
 }

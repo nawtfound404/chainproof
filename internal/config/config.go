@@ -10,6 +10,7 @@ type Config struct {
 	EncryptionEnabled bool
 	ContractAddress   string
 	ChainID           int64
+	APIKey            string
 }
 
 func Load() *Config {
@@ -21,6 +22,7 @@ func Load() *Config {
 		EncryptionEnabled: getEnv("ENCRYPTION_ENABLED", "false") == "true",
 		ContractAddress:   getEnv("CONTRACT_ADDRESS", ""),
 		ChainID:           11155111,
+		APIKey:            os.Getenv("API_KEY"),
 	}
 }
 
